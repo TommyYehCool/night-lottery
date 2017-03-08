@@ -1,0 +1,139 @@
+version = '1.0'
+
+// Task: 測試 web projects
+Closure clShowWebProjects = {task -> println "Task: 'showWebProjects' executed -> I am the web project: $task.project.name"}
+
+// Task: 測試單一 project
+Closure clUtilSayHello = {task -> println "Task: 'utilSayHello' executed -> I am util project: $task.project.name"}
+
+// Task: 測試所有 project
+Closure clAllProjectsSayHello = {task -> println "Task: 'allProjectsSayHello' executed -> I am $task.project.name"}
+
+project.ext {
+	webProjectsList = subprojects.findAll {it.name == "night-lottery-frontend" || it.name == "night-lottery-backend"}
+}
+
+buildscript {
+	ext {
+		springBootVersion = '1.4.3.RELEASE'
+	}
+
+    repositories {
+    	jcenter()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+    }
+}
+
+// 所有 projects
+allprojects {
+	task('allProjectsSayHello').doLast(clAllProjectsSayHello)
+}
+
+// 所有 subprojects
+subprojects {
+	apply plugin: 'java'
+	apply plugin: 'eclipse'
+	
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
+	
+	ext {
+		slf4jVersion = '1.7.21'
+		apacheCommonsLang3Version = '3.+'
+		junitVersion = '4.+'
+	}
+	
+	repositories {
+	    jcenter()
+	    mavenCentral()
+	}
+	
+	dependencies {
+		compile "org.slf4j:slf4j-api:${slf4jVersion}"
+		compile "org.apache.commons:commons-lang3:${apacheCommonsLang3Version}"
+	    testCompile "junit:junit:${junitVersion}"
+	}
+}
+
+// project name 為  project.webProjectsList 所搜尋出來的結果: night-lottery-frontend & night-lottery-backend
+configure(project.webProjectsList) {
+	task('showWebProjects').doLast(clShowWebProjects)
+	
+	apply plugin: 'org.springframework.boot'
+	
+	ext {
+		swaggerVersion = '2.2.2'
+	}
+	
+	dependencies {
+		compile project(":night-lottery-entity")
+		compile project(":night-lottery-util")
+		
+		// --------- Spring Boot ---------
+    	compile "org.springframework.boot:spring-boot-starter-web"
+    	compile "org.springframework.boot:spring-boot-starter-thymeleaf"
+		compile "org.springframework.boot:spring-boot-starter-security"
+		compile "org.springframework.boot:spring-boot-starter-aop"
+		compile "org.springframework.boot:spring-boot-starter-activemq"
+		// compile "org.springframework.boot:spring-boot-starter-jdbc" // FIXME 等 DB 確定建立再使用
+		compile "org.springframework.boot:spring-boot-starter-redis"
+		compile "org.springframework.boot:spring-boot-starter-mail"
+		compile "org.springframework.boot:spring-boot-starter-websocket"
+		compile "org.springframework.boot:spring-boot-starter-test"
+		
+		// --------- 自動產生 RESTapi 文件 ---------
+		compile "io.springfox:springfox-swagger-ui:${swaggerVersion}"
+		compile "io.springfox:springfox-swagger2:${swaggerVersion}"
+	}
+}
+
+// 單一 project: night-lottery-reward-center
+project(":night-lottery-reward-center") {
+	apply plugin: 'org.springframework.boot'
+	
+	dependencies {
+		compile project(":night-lottery-entity")
+		compile project(":night-lottery-util")
+		
+		// --------- Spring Boot ---------
+    	compile "org.springframework.boot:spring-boot-starter-web"
+    	compile "org.springframework.boot:spring-boot-starter-activemq"
+    	// compile "org.springframework.boot:spring-boot-starter-jdbc" // FIXME 等 DB 確定建立再使用
+		compile "org.springframework.boot:spring-boot-starter-redis"
+		compile "org.springframework.boot:spring-boot-starter-test"
+    }
+}
+
+// 單一 project: night-lottery-util
+project(":night-lottery-util") {
+	task('utilSayHello').doLast(clUtilSayHello)
+
+	ext {
+		jsoupVersion = '1.10.2'
+		httpClientVersion = '4.5.2'
+	}
+	
+	dependencies {
+		compile project(":night-lottery-entity")
+
+		compile "org.jsoup:jsoup:${jsoupVersion}"
+		compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
+	}
+}
+
+// 單一 project: night-lottery-entity
+project(":night-lottery-entity") {
+	ext {
+		lombokVersion = '1.16.10'
+		jacksonVersion = '2.8.6'
+	}
+		
+	dependencies {
+		compile "org.projectlombok:lombok:${lombokVersion}"
+		compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+	}
+}
